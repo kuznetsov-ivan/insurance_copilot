@@ -1,0 +1,32 @@
+[
+  {
+    "customer_id": "C-1001",
+    "name": "Alice Johnson",
+    "phone": "+15550110001",
+    "policy_reference": "POL-1001"
+  },
+  {
+    "customer_id": "C-1002",
+    "name": "Brian Smith",
+    "phone": "+15550110002",
+    "policy_reference": "POL-1002"
+  },
+  {
+    "customer_id": "C-1003",
+    "name": "Carlos Diaz",
+    "phone": "+15550110003",
+    "policy_reference": "POL-1003"
+  },
+  {
+    "customer_id": "C-1004",
+    "name": "Diana Wells",
+    "phone": "+15550110004",
+    "policy_reference": "POL-1004"
+  },
+  {
+    "customer_id": "C-1005",
+    "name": "Emily Park",
+    "phone": "+15550110005",
+    "policy_reference": "POL-1005"
+  }
+]

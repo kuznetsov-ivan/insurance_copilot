@@ -1,0 +1,58 @@
+[
+  {
+    "provider_name": "CityTow",
+    "garage_name": "CityTow Garage West",
+    "lat": 40.72,
+    "lon": -73.99,
+    "capabilities": ["tow_truck", "repair_van"]
+  },
+  {
+    "provider_name": "Highway Rescue",
+    "garage_name": "Highway Rescue Hub",
+    "lat": 40.75,
+    "lon": -73.95,
+    "capabilities": ["tow_truck"]
+  },
+  {
+    "provider_name": "QuickFix Mobile",
+    "garage_name": "QuickFix Midtown",
+    "lat": 40.74,
+    "lon": -73.98,
+    "capabilities": ["repair_van"]
+  },
+  {
+    "provider_name": "North Auto Assist",
+    "garage_name": "North Auto Dock",
+    "lat": 40.79,
+    "lon": -73.94,
+    "capabilities": ["tow_truck", "repair_van"]
+  },
+  {
+    "provider_name": "Eastline Recovery",
+    "garage_name": "Eastline Station",
+    "lat": 40.73,
+    "lon": -73.9,
+    "capabilities": ["tow_truck"]
+  },
+  {
+    "provider_name": "Metro Mechanics",
+    "garage_name": "Metro Service Point",
+    "lat": 40.7,
+    "lon": -74.02,
+    "capabilities": ["repair_van"]
+  },
+  {
+    "provider_name": "Rapid Wheel Aid",
+    "garage_name": "Rapid Wheel South",
+    "lat": 40.68,
+    "lon": -73.97,
+    "capabilities": ["tow_truck", "repair_van"]
+  },
+  {
+    "provider_name": "Prime Road Help",
+    "garage_name": "Prime North Branch",
+    "lat": 40.81,
+    "lon": -73.99,
+    "capabilities": ["tow_truck", "repair_van"]
+  }
+]

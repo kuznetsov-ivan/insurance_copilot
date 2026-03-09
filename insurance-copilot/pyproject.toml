@@ -1,0 +1,29 @@
+[project]
+name = "insurance-copilot"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "Ivan Kuznetsov", email = "ivan.k@turing.com" }
+]
+requires-python = ">=3.13"
+dependencies = [
+    "fastapi>=0.135.1",
+    "jinja2>=3.1.6",
+    "pydantic>=2.12.5",
+    "python-multipart>=0.0.22",
+    "uvicorn>=0.41.0",
+]
+
+[project.scripts]
+insurance-copilot = "insurance_copilot:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[dependency-groups]
+dev = [
+    "httpx>=0.28.1",
+    "pytest>=9.0.2",
+]

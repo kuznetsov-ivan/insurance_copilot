@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Insurance Co-Pilot Demo</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body>
+    <main class="container">
+      <section class="header">
+        <h1>Insurance Co-Pilot</h1>
+        <p>Roadside assistance intake with coverage, dispatch, and customer update.</p>
+      </section>
+
+      <section class="panel">
+        <h2>Claim Intake</h2>
+        <div class="controls">
+          <button id="startMic">Start Voice Capture</button>
+          <button id="stopMic">Stop</button>
+          <button id="processTranscript">Process Transcript</button>
+          <button id="evaluateClaim">Evaluate Claim</button>
+          <button id="resetSession">Reset</button>
+        </div>
+        <label for="manualInput">Manual transcript input (fallback)</label>
+        <textarea id="manualInput" rows="5" placeholder="Type customer conversation here..."></textarea>
+        <label for="transcript">Live transcript</label>
+        <textarea id="transcript" rows="7"></textarea>
+        <p id="micStatus" class="muted">Voice capture idle.</p>
+      </section>
+
+      <section class="grid">
+        <article class="panel">
+          <h3>Extracted Fields</h3>
+          <pre id="fieldsOutput">No data yet.</pre>
+          <h3>Missing Fields</h3>
+          <pre id="missingOutput">[]</pre>
+          <h3>Next Prompt</h3>
+          <pre id="promptOutput">Start voice capture to begin.</pre>
+        </article>
+
+        <article class="panel">
+          <h3>Observer Console</h3>
+          <pre id="observerOutput">No evaluation yet.</pre>
+        </article>
+      </section>
+
+      <section class="grid">
+        <article class="panel">
+          <h3>Coverage & Dispatch</h3>
+          <pre id="resultOutput">No evaluation yet.</pre>
+        </article>
+        <article class="panel">
+          <h3>Customer SMS Update</h3>
+          <pre id="smsOutput">No messages yet.</pre>
+        </article>
+      </section>
+
+      <section class="panel">
+        <h3>Demo Scenarios</h3>
+        <ul>
+          {% for scenario in scenarios %}
+          <li>
+            <button class="scenarioButton" data-transcript="{{ scenario.transcript | e }}">
+              {{ scenario.name }}
+            </button>
+          </li>
+          {% endfor %}
+        </ul>
+      </section>
+    </main>
+    <script src="/static/app.js"></script>
+  </body>
+</html>

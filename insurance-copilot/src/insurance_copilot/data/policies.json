@@ -1,0 +1,57 @@
+[
+  {
+    "policy_reference": "POL-1001",
+    "customer_name": "Alice Johnson",
+    "status": "active",
+    "roadside_assistance": true,
+    "tow_covered": true,
+    "repair_van_covered": true,
+    "rental_or_taxi_covered": true,
+    "covered_regions": ["city", "highway"],
+    "exclusions": ["off_road"]
+  },
+  {
+    "policy_reference": "POL-1002",
+    "customer_name": "Brian Smith",
+    "status": "active",
+    "roadside_assistance": true,
+    "tow_covered": true,
+    "repair_van_covered": false,
+    "rental_or_taxi_covered": false,
+    "covered_regions": ["city", "highway"],
+    "exclusions": ["flood_damage"]
+  },
+  {
+    "policy_reference": "POL-1003",
+    "customer_name": "Carlos Diaz",
+    "status": "lapsed",
+    "roadside_assistance": false,
+    "tow_covered": false,
+    "repair_van_covered": false,
+    "rental_or_taxi_covered": false,
+    "covered_regions": ["city"],
+    "exclusions": []
+  },
+  {
+    "policy_reference": "POL-1004",
+    "customer_name": "Diana Wells",
+    "status": "active",
+    "roadside_assistance": true,
+    "tow_covered": true,
+    "repair_van_covered": true,
+    "rental_or_taxi_covered": false,
+    "covered_regions": ["city"],
+    "exclusions": ["off_road"]
+  },
+  {
+    "policy_reference": "POL-1005",
+    "customer_name": "Emily Park",
+    "status": "active",
+    "roadside_assistance": true,
+    "tow_covered": false,
+    "repair_van_covered": true,
+    "rental_or_taxi_covered": true,
+    "covered_regions": ["city", "highway"],
+    "exclusions": []
+  }
+]

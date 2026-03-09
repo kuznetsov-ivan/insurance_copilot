@@ -1,0 +1,14 @@
+[
+  {
+    "name": "Flat battery, drivable",
+    "transcript": "Hi, this is Alice Johnson, policy POL-1001. I am in city downtown at 40.73,-73.98. My car has a flat battery but it is still drivable. There are 2 passengers and no safety risk."
+  },
+  {
+    "name": "Engine failure, not drivable",
+    "transcript": "Hello this is Brian Smith policy POL-1002. I am on highway marker 11 at 40.75,-73.96. Engine failure and the vehicle is not drivable. There is low safety risk and 1 passenger."
+  },
+  {
+    "name": "Out of coverage",
+    "transcript": "Carlos Diaz here with policy POL-1003. I am off road trail at 40.71,-74.01. The car is not drivable and needs help. Two passengers with medium safety risk."
+  }
+]

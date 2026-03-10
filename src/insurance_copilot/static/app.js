@@ -6,7 +6,6 @@ const promptOutput = document.getElementById("promptOutput");
 const observerOutput = document.getElementById("observerOutput");
 const resultOutput = document.getElementById("resultOutput");
 const smsOutput = document.getElementById("smsOutput");
-const micStatus = document.getElementById("micStatus");
 const policyCard = document.getElementById("policyCard");
 const coverageCard = document.getElementById("coverageCard");
 const mapCanvas = document.getElementById("mapCanvas");
@@ -19,7 +18,6 @@ const recordingBadge = document.getElementById("recordingBadge");
 const evaluateClaimButton = document.getElementById("evaluateClaim");
 const processTranscriptButton = document.getElementById("processTranscript");
 const resetSessionButton = document.getElementById("resetSession");
-const coverageLoading = document.getElementById("coverageLoading");
 const coverageOverlay = document.getElementById("coverageOverlay");
 const intakePanel = document.getElementById("intakePanel");
 const coveragePanel = document.getElementById("coveragePanel");
@@ -233,7 +231,6 @@ function setIntakeLoading(isLoading, title = "Working...", message = "Waiting fo
 function setCoverageLoading(isLoading) {
   evaluateClaimButton.disabled = isLoading;
   resetSessionButton.disabled = isLoading;
-  coverageLoading.classList.toggle("hidden", !isLoading);
   coverageOverlay.classList.toggle("hidden", !isLoading);
   evaluateClaimButton.textContent = isLoading ? "Running Coverage Check..." : "Run Coverage Check";
   setPanelBusy(coveragePanel, isLoading);
@@ -324,7 +321,6 @@ async function startVoiceTurn() {
   recordVoiceButton.classList.add("recording");
   stopVoiceButton.disabled = false;
   recordingBadge.classList.remove("hidden");
-  micStatus.textContent = "Recording voice turn for backend STT.";
 }
 
 async function stopVoiceTurn() {
@@ -359,7 +355,6 @@ async function stopVoiceTurn() {
       assistantVoicePlayer.src = `data:${data.assistant_audio_mime_type};base64,${data.assistant_audio_base64}`;
       assistantVoicePlayer.play().catch(() => {});
     }
-    micStatus.textContent = `Voice turn processed with ${data.assistant_source.toUpperCase()}.`;
   } finally {
     mediaRecorder = null;
     setIntakeLoading(false);
@@ -447,3 +442,8 @@ stopVoiceButton.disabled = true;
 setIntakeLoading(false);
 setCoverageLoading(false);
 renderMap({}, []);
+window.addEventListener("pageshow", () => {
+  transcriptEl.value = "";
+  manualInputEl.value = "";
+  resetSession().catch(() => {});
+});

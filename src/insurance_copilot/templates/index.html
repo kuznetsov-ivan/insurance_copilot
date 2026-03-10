@@ -48,6 +48,7 @@
               <textarea
                 id="manualInput"
                 rows="6"
+                autocomplete="off"
                 placeholder="Type or dictate the customer conversation here..."
               ></textarea>
               <div class="manual-actions">
@@ -56,16 +57,14 @@
             </div>
             <div>
               <label for="transcript">Accumulated conversation</label>
-              <textarea id="transcript" rows="6" placeholder="Transcript will build here..."></textarea>
+              <textarea id="transcript" rows="6" autocomplete="off" placeholder="Transcript will build here..."></textarea>
             </div>
           </div>
           <div class="status-bar">
-            <span id="micStatus">Voice capture idle.</span>
             <span id="recordingBadge" class="recording-badge hidden">
               <span class="recording-dot"></span>
               Recording
             </span>
-            <span id="sessionTag">Session: default</span>
           </div>
           <div class="assistant-bar">
             <div id="assistantReply" class="assistant-reply">The voice agent will reply here after each recorded turn.</div>
@@ -104,10 +103,6 @@
           </div>
           <div class="controls">
             <button id="evaluateClaim">Run Coverage Check</button>
-            <span id="coverageLoading" class="loading-chip hidden">
-              <span class="loading-spinner"></span>
-              Waiting for model
-            </span>
           </div>
           <div id="coverageOverlay" class="panel-loading hidden" aria-live="polite">
             <span class="loading-spinner"></span>

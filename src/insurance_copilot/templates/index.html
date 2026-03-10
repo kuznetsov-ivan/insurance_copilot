@@ -22,7 +22,7 @@
       </section>
 
       <section class="stage-grid">
-        <article class="panel panel-intake">
+        <article class="panel panel-intake" id="intakePanel">
           <div class="stage-header">
             <span class="stage-index">01</span>
             <div>
@@ -31,12 +31,9 @@
             </div>
           </div>
           <div class="controls">
-            <button id="recordVoice">Record Voice Turn</button>
+            <button id="recordVoice" class="voice-button">Record Voice Turn</button>
             <button id="stopVoice" class="ghost">Stop & Send</button>
-            <button id="startMic" class="secondary-action">Browser Transcript</button>
-            <button id="stopMic" class="ghost">Stop Browser Mic</button>
-            <button id="processTranscript">Process Conversation</button>
-            <button id="resetSession" class="ghost">Reset</button>
+            <button id="resetSession" class="ghost small-button">Reset</button>
           </div>
           <div class="scenario-strip">
             {% for scenario in scenarios %}
@@ -53,6 +50,9 @@
                 rows="6"
                 placeholder="Type or dictate the customer conversation here..."
               ></textarea>
+              <div class="manual-actions">
+                <button id="processTranscript" class="secondary-action">Send Text</button>
+              </div>
             </div>
             <div>
               <label for="transcript">Accumulated conversation</label>
@@ -61,11 +61,22 @@
           </div>
           <div class="status-bar">
             <span id="micStatus">Voice capture idle.</span>
+            <span id="recordingBadge" class="recording-badge hidden">
+              <span class="recording-dot"></span>
+              Recording
+            </span>
             <span id="sessionTag">Session: default</span>
           </div>
           <div class="assistant-bar">
             <div id="assistantReply" class="assistant-reply">The voice agent will reply here after each recorded turn.</div>
             <audio id="assistantVoicePlayer" controls preload="none"></audio>
+          </div>
+          <div id="intakeLoading" class="panel-loading hidden" aria-live="polite">
+            <span class="loading-spinner"></span>
+            <div>
+              <strong id="intakeLoadingTitle">Working...</strong>
+              <p id="intakeLoadingText">Waiting for the model.</p>
+            </div>
           </div>
           <div class="three-column">
             <section class="subpanel">
@@ -83,7 +94,7 @@
           </div>
         </article>
 
-        <article class="panel">
+        <article class="panel" id="coveragePanel">
           <div class="stage-header">
             <span class="stage-index">02</span>
             <div>
@@ -93,6 +104,17 @@
           </div>
           <div class="controls">
             <button id="evaluateClaim">Run Coverage Check</button>
+            <span id="coverageLoading" class="loading-chip hidden">
+              <span class="loading-spinner"></span>
+              Waiting for model
+            </span>
+          </div>
+          <div id="coverageOverlay" class="panel-loading hidden" aria-live="polite">
+            <span class="loading-spinner"></span>
+            <div>
+              <strong>Running coverage check</strong>
+              <p>Matching policy, evaluating coverage, and planning next action.</p>
+            </div>
           </div>
           <div class="two-column">
             <section class="subpanel">

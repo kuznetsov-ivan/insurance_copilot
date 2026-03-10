@@ -1,4 +1,5 @@
 from insurance_copilot.models import ClaimIntake, CoverageDecision
+from insurance_copilot.services.claim_extraction_service import ClaimExtractionService
 from insurance_copilot.services.database_service import DatabaseService
 from insurance_copilot.services.coverage_service import CoverageService
 from insurance_copilot.services.dispatch_service import DispatchService
@@ -87,3 +88,13 @@ def test_notification_contains_eta_when_covered() -> None:
     )
     assert "ETA" in notification.message
     assert dispatch_plan.eta_minutes > 0
+
+
+def test_normalize_claim_prefers_policy_digits_from_transcript() -> None:
+    service = ClaimExtractionService()
+    claim = ClaimIntake(policy_reference="POL-1234")
+    normalized = service.normalize_claim(
+        claim,
+        "Hi, I'm Brian Smith and my policy number is 1002.",
+    )
+    assert normalized.policy_reference == "POL-1002"

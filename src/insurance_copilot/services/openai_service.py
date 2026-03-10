@@ -10,6 +10,11 @@ from typing import Any
 
 
 class OpenAIService:
+    CHAT_MODEL = "gpt-5.1"
+    TRANSCRIBE_MODEL = "gpt-4o-transcribe"
+    TTS_MODEL = "gpt-4o-mini-tts"
+    TTS_VOICE = "coral"
+
     def __init__(self) -> None:
         self._api_key = os.getenv("OPENAI_API_KEY")
         self._base_url = "https://api.openai.com/v1"
@@ -24,7 +29,7 @@ class OpenAIService:
 
         boundary = f"----OpenAIBoundary{uuid.uuid4().hex}"
         multipart = []
-        multipart.extend(self._form_part(boundary, "model", b"gpt-4o-mini-transcribe"))
+        multipart.extend(self._form_part(boundary, "model", self.TRANSCRIBE_MODEL.encode("utf-8")))
         multipart.extend(
             self._file_part(
                 boundary,
@@ -50,8 +55,8 @@ class OpenAIService:
             path="/audio/speech",
             body=json.dumps(
                 {
-                    "model": "gpt-4o-mini-tts",
-                    "voice": "coral",
+                    "model": self.TTS_MODEL,
+                    "voice": self.TTS_VOICE,
                     "input": text,
                     "instructions": "Speak like a calm insurance assistant. Keep the tone clear and warm.",
                     "response_format": "mp3",
@@ -66,9 +71,15 @@ class OpenAIService:
             "type": "object",
             "properties": {
                 "customer_name": {"type": ["string", "null"]},
-                "policy_reference": {"type": ["string", "null"]},
+                "policy_reference": {
+                    "type": ["string", "null"],
+                    "description": "Return the exact policy digits from the transcript, normalized as POL-<4 digits>. If the transcript says 1002, return POL-1002. Never invent different digits.",
+                },
                 "vehicle": {"type": ["string", "null"]},
-                "location": {"type": ["string", "null"]},
+                "location": {
+                    "type": ["string", "null"],
+                    "description": "Normalize to region or region:lat,lon. Use city, highway, or off_road when possible.",
+                },
                 "issue_type": {"type": ["string", "null"]},
                 "is_drivable": {"type": ["boolean", "null"]},
                 "safety_risk": {"type": ["string", "null"]},
@@ -88,9 +99,14 @@ class OpenAIService:
         }
         system = (
             "Extract structured roadside assistance claim intake data. "
-            "Normalize location to region:lat,lon when coordinates are present. "
+            "You are converting a raw speech transcript into normalized JSON fields. "
+            "For policy_reference, preserve the exact digits spoken in the transcript and normalize them as POL-<4 digits>. "
+            "If the transcript says 1002, POL1002, or 'one zero zero two', the result must be POL-1002. "
+            "Never guess or substitute different digits. "
+            "Normalize location to region:lat,lon when coordinates are present, and infer region labels like city, highway, or off_road. "
             "Allowed issue_type values: flat_battery, engine_failure, flat_tire, collision. "
-            "Allowed safety_risk values: low, medium, high."
+            "Allowed safety_risk values: low, medium, high. "
+            "If a field is unknown, return null rather than guessing."
         )
         return self._structured_json("claim_extraction", system, transcript, schema)
 
@@ -166,7 +182,7 @@ class OpenAIService:
             raise RuntimeError("OPENAI_API_KEY is not configured.")
 
         payload = {
-            "model": "gpt-4o-mini",
+            "model": self.CHAT_MODEL,
             "messages": [
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt},

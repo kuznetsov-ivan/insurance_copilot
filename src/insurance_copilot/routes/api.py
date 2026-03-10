@@ -33,7 +33,10 @@ router = APIRouter(prefix="/api", tags=["api"])
 def append_transcript(payload: TranscriptRequest) -> TranscriptResponse:
     session = session_store.get(payload.session_id)
     session.transcript = f"{session.transcript} {payload.chunk}".strip()
-    claim, assistant_source = _extract_claim(session.transcript)
+    try:
+        claim, assistant_source = _extract_claim(session.transcript)
+    except RuntimeError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
     missing_fields = conversation_service.missing_fields(claim)
     return TranscriptResponse(
         session_id=payload.session_id,
@@ -49,9 +52,15 @@ def append_transcript(payload: TranscriptRequest) -> TranscriptResponse:
 def evaluate_claim(payload: EvaluateClaimRequest) -> EvaluateClaimResponse:
     session = session_store.get(payload.session_id)
     transcript = payload.transcript or session.transcript
-    claim = payload.claim or _extract_claim(transcript)[0]
-    coverage_decision, policy, coverage_query, decision_source = _evaluate_coverage(claim, transcript)
-    dispatch_plan, provider_candidates, dispatch_query = _recommend_dispatch(claim, coverage_decision, policy)
+    try:
+        claim = payload.claim or _extract_claim(transcript)[0]
+    except RuntimeError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+    try:
+        coverage_decision, policy, coverage_query, decision_source = _evaluate_coverage(claim, transcript)
+        dispatch_plan, provider_candidates, dispatch_query = _recommend_dispatch(claim, coverage_decision, policy)
+    except RuntimeError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
     customer_notification = notification_service.deliver(
         session_id=payload.session_id,
         customer_name=policy.get("customer_name") if policy else claim.customer_name,
@@ -111,7 +120,7 @@ async def voice_turn(
 
     session = session_store.get(session_id)
     session.transcript = f"{session.transcript} {transcript_chunk}".strip()
-    claim, assistant_source = _extract_claim(session.transcript)
+    claim, assistant_source = _extract_claim(session.transcript, require_llm=True)
     missing_fields = conversation_service.missing_fields(claim)
     enough_information = not missing_fields
     try:
@@ -154,51 +163,53 @@ def reset_session(session_id: str = "default") -> dict[str, str]:
     return {"status": "ok", "session_id": session_id}
 
 
-def _extract_claim(transcript: str) -> tuple[ClaimIntake, str]:
-    if openai_service.available:
-        try:
-            return ClaimIntake(**openai_service.extract_claim(transcript)), "llm"
-        except Exception:
-            pass
-    return claim_extraction_service.extract(transcript), "rules"
+def _extract_claim(transcript: str, *, require_llm: bool = False) -> tuple[ClaimIntake, str]:
+    if not openai_service.available:
+        raise RuntimeError("OPENAI_API_KEY is required for transcript extraction.")
+    try:
+        llm_claim = ClaimIntake(**openai_service.extract_claim(transcript))
+        return claim_extraction_service.normalize_claim(llm_claim, transcript), "llm"
+    except Exception as exc:
+        raise RuntimeError(f"gpt-5.1 extraction failed: {exc}") from exc
 
 
 def _evaluate_coverage(claim: ClaimIntake, transcript: str) -> tuple:
-    if openai_service.available:
-        try:
-            query_payload = openai_service.generate_policy_query(transcript, claim.model_dump())
-            policies = database_service.execute_readonly(query_payload["sql_query"])
-            if policies:
-                coverage_decision, policy = coverage_service.evaluate(claim, matched_policy=policies[0])
-                return coverage_decision, policy, query_payload["sql_query"], "llm"
-        except Exception:
-            pass
-    coverage_decision, policy = coverage_service.evaluate(claim)
-    return coverage_decision, policy, None, "rules"
+    if not openai_service.available:
+        raise RuntimeError("OPENAI_API_KEY is required for coverage evaluation.")
+    try:
+        query_payload = openai_service.generate_policy_query(transcript, claim.model_dump())
+        policies = database_service.execute_readonly(query_payload["sql_query"])
+        matched_policy = policies[0] if policies else None
+        coverage_decision, policy = coverage_service.evaluate(claim, matched_policy=matched_policy)
+        return coverage_decision, policy, query_payload["sql_query"], "llm"
+    except Exception as exc:
+        raise RuntimeError(f"gpt-5.1 coverage query failed: {exc}") from exc
 
 
 def _recommend_dispatch(claim: ClaimIntake, coverage_decision, policy: dict) -> tuple:
-    if openai_service.available and coverage_decision.status == "covered" and policy:
-        try:
-            query_payload = openai_service.generate_dispatch_query(claim.model_dump(), policy)
-            provider_rows = database_service.execute_readonly(query_payload["provider_sql_query"])
-            return dispatch_service.recommend(
-                claim,
-                coverage_decision,
-                policy,
-                provider_rows=provider_rows,
-                forced_action=query_payload["action_type"],
-            ) + (query_payload["provider_sql_query"],)
-        except Exception:
-            pass
-    dispatch_plan, provider_candidates = dispatch_service.recommend(claim, coverage_decision, policy)
-    return dispatch_plan, provider_candidates, None
+    if coverage_decision.status != "covered" or not policy:
+        dispatch_plan, provider_candidates = dispatch_service.recommend(claim, coverage_decision, policy)
+        return dispatch_plan, provider_candidates, None
+    if not openai_service.available:
+        raise RuntimeError("OPENAI_API_KEY is required for dispatch planning.")
+    try:
+        query_payload = openai_service.generate_dispatch_query(claim.model_dump(), policy)
+        provider_rows = database_service.execute_readonly(query_payload["provider_sql_query"])
+        return dispatch_service.recommend(
+            claim,
+            coverage_decision,
+            policy,
+            provider_rows=provider_rows,
+            forced_action=query_payload["action_type"],
+        ) + (query_payload["provider_sql_query"],)
+    except Exception as exc:
+        raise RuntimeError(f"gpt-5.1 dispatch query failed: {exc}") from exc
 
 
 def _agent_reply(transcript: str, missing_fields: list[str], enough_information: bool) -> str:
-    if openai_service.available:
-        try:
-            return openai_service.generate_agent_reply(transcript, missing_fields, enough_information)
-        except Exception:
-            pass
-    return conversation_service.next_prompt(_extract_claim(transcript)[0])
+    if not openai_service.available:
+        raise RuntimeError("OPENAI_API_KEY is required for voice replies.")
+    try:
+        return openai_service.generate_agent_reply(transcript, missing_fields, enough_information)
+    except Exception as exc:
+        raise RuntimeError(f"gpt-5.1 voice reply failed: {exc}") from exc

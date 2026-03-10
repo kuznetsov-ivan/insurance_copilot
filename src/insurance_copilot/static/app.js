@@ -13,8 +13,20 @@ const mapCanvas = document.getElementById("mapCanvas");
 const providerList = document.getElementById("providerList");
 const assistantReply = document.getElementById("assistantReply");
 const assistantVoicePlayer = document.getElementById("assistantVoicePlayer");
+const recordVoiceButton = document.getElementById("recordVoice");
+const stopVoiceButton = document.getElementById("stopVoice");
+const recordingBadge = document.getElementById("recordingBadge");
+const evaluateClaimButton = document.getElementById("evaluateClaim");
+const processTranscriptButton = document.getElementById("processTranscript");
+const resetSessionButton = document.getElementById("resetSession");
+const coverageLoading = document.getElementById("coverageLoading");
+const coverageOverlay = document.getElementById("coverageOverlay");
+const intakePanel = document.getElementById("intakePanel");
+const coveragePanel = document.getElementById("coveragePanel");
+const intakeLoading = document.getElementById("intakeLoading");
+const intakeLoadingTitle = document.getElementById("intakeLoadingTitle");
+const intakeLoadingText = document.getElementById("intakeLoadingText");
 
-let recognition = null;
 let currentTranscript = "";
 let mediaRecorder = null;
 let activeStream = null;
@@ -67,38 +79,6 @@ async function postVoiceTurn(blob) {
 function appendToTranscript(chunk) {
   currentTranscript = `${currentTranscript} ${chunk}`.trim();
   transcriptEl.value = currentTranscript;
-}
-
-function setupSpeechRecognition() {
-  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SpeechRecognition) {
-    micStatus.textContent = "Browser speech API unavailable. Use manual input.";
-    return null;
-  }
-
-  recognition = new SpeechRecognition();
-  recognition.lang = "en-US";
-  recognition.continuous = true;
-  recognition.interimResults = true;
-
-  recognition.onresult = (event) => {
-    let finalChunk = "";
-    for (let index = event.resultIndex; index < event.results.length; index += 1) {
-      const transcript = event.results[index][0].transcript;
-      if (event.results[index].isFinal) {
-        finalChunk += ` ${transcript}`;
-      }
-    }
-    if (finalChunk.trim()) {
-      appendToTranscript(finalChunk.trim());
-    }
-  };
-
-  recognition.onerror = () => {
-    micStatus.textContent = "Microphone error. Use manual input.";
-  };
-
-  return recognition;
 }
 
 function renderPolicy(policy) {
@@ -235,22 +215,77 @@ function renderDispatch(dispatchPlan) {
   `;
 }
 
+function setPanelBusy(panel, isBusy) {
+  panel.classList.toggle("panel-busy", isBusy);
+}
+
+function setIntakeLoading(isLoading, title = "Working...", message = "Waiting for the model.") {
+  intakeLoading.classList.toggle("hidden", !isLoading);
+  intakeLoadingTitle.textContent = title;
+  intakeLoadingText.textContent = message;
+  processTranscriptButton.disabled = isLoading;
+  recordVoiceButton.disabled = isLoading;
+  stopVoiceButton.disabled = isLoading || !mediaRecorder;
+  resetSessionButton.disabled = isLoading;
+  setPanelBusy(intakePanel, isLoading);
+}
+
+function setCoverageLoading(isLoading) {
+  evaluateClaimButton.disabled = isLoading;
+  resetSessionButton.disabled = isLoading;
+  coverageLoading.classList.toggle("hidden", !isLoading);
+  coverageOverlay.classList.toggle("hidden", !isLoading);
+  evaluateClaimButton.textContent = isLoading ? "Running Coverage Check..." : "Run Coverage Check";
+  setPanelBusy(coveragePanel, isLoading);
+
+  if (isLoading) {
+    policyCard.className = "detail-card empty";
+    policyCard.innerHTML = "Looking up policy record...";
+    coverageCard.className = "detail-card empty";
+    coverageCard.innerHTML = "Running coverage checks...";
+    resultOutput.className = "detail-card empty";
+    resultOutput.innerHTML = "Planning dispatch...";
+  }
+}
+
+function renderCoverageError(message) {
+  const text = `Error: ${message}`;
+  policyCard.className = "detail-card empty";
+  policyCard.innerHTML = text;
+  coverageCard.className = "detail-card empty";
+  coverageCard.innerHTML = text;
+  resultOutput.className = "detail-card empty";
+  resultOutput.innerHTML = text;
+  observerOutput.textContent = text;
+}
+
 async function processTranscript() {
   const chunk = manualInputEl.value.trim() || transcriptEl.value.trim();
   if (!chunk) {
+    assistantReply.textContent = "Add conversation text or record a voice turn first.";
     return;
   }
-  const data = await postJson("/api/transcript", { session_id: "default", chunk });
-  currentTranscript = data.transcript;
-  transcriptEl.value = data.transcript;
-  fieldsOutput.textContent = asJson(data.extracted_fields);
-  missingOutput.textContent = asJson(data.missing_fields);
-  promptOutput.textContent = data.next_prompt;
-  assistantReply.textContent = `Processed with ${data.assistant_source.toUpperCase()} extraction.`;
-  manualInputEl.value = "";
+  setIntakeLoading(true, "Extracting claim details", "Passing the full conversation to gpt-5.1.");
+  try {
+    const data = await postJson("/api/transcript", { session_id: "default", chunk });
+    currentTranscript = data.transcript;
+    transcriptEl.value = data.transcript;
+    fieldsOutput.textContent = asJson(data.extracted_fields);
+    missingOutput.textContent = asJson(data.missing_fields);
+    promptOutput.textContent = data.next_prompt;
+    assistantReply.textContent = `Processed with ${data.assistant_source.toUpperCase()} extraction.`;
+    manualInputEl.value = "";
+  } finally {
+    setIntakeLoading(false);
+  }
 }
 
 async function evaluateClaim() {
+  if (!transcriptEl.value.trim()) {
+    renderCoverageError("No conversation available. Record or send a transcript first.");
+    return;
+  }
+  setCoverageLoading(true);
   const data = await postJson("/api/claims/evaluate", {
     session_id: "default",
     transcript: transcriptEl.value,
@@ -263,6 +298,7 @@ async function evaluateClaim() {
 
   observerOutput.textContent = asJson(data.observer_state);
   smsOutput.textContent = data.customer_notification.message;
+  setCoverageLoading(false);
 }
 
 function stopActiveStream() {
@@ -285,6 +321,9 @@ async function startVoiceTurn() {
     }
   };
   mediaRecorder.start();
+  recordVoiceButton.classList.add("recording");
+  stopVoiceButton.disabled = false;
+  recordingBadge.classList.remove("hidden");
   micStatus.textContent = "Recording voice turn for backend STT.";
 }
 
@@ -293,30 +332,38 @@ async function stopVoiceTurn() {
     return;
   }
   const recorder = mediaRecorder;
-  const data = await new Promise((resolve, reject) => {
-    recorder.onstop = async () => {
-      try {
-        const blob = new Blob(audioChunks, { type: "audio/webm" });
-        stopActiveStream();
-        resolve(await postVoiceTurn(blob));
-      } catch (error) {
-        reject(error);
-      }
-    };
-    recorder.stop();
-  });
-  mediaRecorder = null;
-  currentTranscript = data.transcript;
-  transcriptEl.value = data.transcript;
-  fieldsOutput.textContent = asJson(data.extracted_fields);
-  missingOutput.textContent = asJson(data.missing_fields);
-  promptOutput.textContent = data.next_prompt;
-  assistantReply.textContent = data.assistant_text;
-  if (data.assistant_audio_base64) {
-    assistantVoicePlayer.src = `data:${data.assistant_audio_mime_type};base64,${data.assistant_audio_base64}`;
-    assistantVoicePlayer.play().catch(() => {});
+  recordVoiceButton.classList.remove("recording");
+  recordingBadge.classList.add("hidden");
+  setIntakeLoading(true, "Processing voice turn", "Transcribing audio and extracting claim fields.");
+  try {
+    const data = await new Promise((resolve, reject) => {
+      recorder.onstop = async () => {
+        try {
+          const blob = new Blob(audioChunks, { type: "audio/webm" });
+          stopActiveStream();
+          resolve(await postVoiceTurn(blob));
+        } catch (error) {
+          reject(error);
+        }
+      };
+      recorder.stop();
+    });
+    mediaRecorder = null;
+    currentTranscript = data.transcript;
+    transcriptEl.value = data.transcript;
+    fieldsOutput.textContent = asJson(data.extracted_fields);
+    missingOutput.textContent = asJson(data.missing_fields);
+    promptOutput.textContent = data.next_prompt;
+    assistantReply.textContent = data.assistant_text;
+    if (data.assistant_audio_base64) {
+      assistantVoicePlayer.src = `data:${data.assistant_audio_mime_type};base64,${data.assistant_audio_base64}`;
+      assistantVoicePlayer.play().catch(() => {});
+    }
+    micStatus.textContent = `Voice turn processed with ${data.assistant_source.toUpperCase()}.`;
+  } finally {
+    mediaRecorder = null;
+    setIntakeLoading(false);
   }
-  micStatus.textContent = `Voice turn processed with ${data.assistant_source.toUpperCase()}.`;
 }
 
 async function resetSession() {
@@ -332,56 +379,55 @@ async function resetSession() {
   assistantReply.textContent = "The voice agent will reply here after each recorded turn.";
   assistantVoicePlayer.removeAttribute("src");
   assistantVoicePlayer.load();
+  recordVoiceButton.classList.remove("recording");
+  stopVoiceButton.disabled = true;
+  recordingBadge.classList.add("hidden");
+  setIntakeLoading(false);
   renderPolicy(null);
   renderCoverage(null, []);
   renderDispatch(null);
   renderMap({}, []);
+  setCoverageLoading(false);
 }
 
-document.getElementById("recordVoice").addEventListener("click", () => {
-  startVoiceTurn().catch((error) => {
-    assistantReply.textContent = `Error: ${error.message}`;
-  });
-});
-
-document.getElementById("stopVoice").addEventListener("click", () => {
-  stopVoiceTurn().catch((error) => {
-    assistantReply.textContent = `Error: ${error.message}`;
-  });
-});
-
-document.getElementById("startMic").addEventListener("click", () => {
-  if (!recognition) {
-    recognition = setupSpeechRecognition();
-  }
-  if (!recognition) {
+recordVoiceButton.addEventListener("click", () => {
+  if (mediaRecorder) {
     return;
   }
-  recognition.start();
-  micStatus.textContent = "Voice capture running.";
+  startVoiceTurn().catch((error) => {
+    setIntakeLoading(false);
+    assistantReply.textContent = `Error: ${error.message}`;
+  });
 });
 
-document.getElementById("stopMic").addEventListener("click", () => {
-  if (recognition) {
-    recognition.stop();
+stopVoiceButton.addEventListener("click", () => {
+  if (!mediaRecorder) {
+    return;
   }
-  micStatus.textContent = "Voice capture stopped.";
+  stopVoiceTurn().catch((error) => {
+    setIntakeLoading(false);
+    assistantReply.textContent = `Error: ${error.message}`;
+  });
 });
 
 document.getElementById("processTranscript").addEventListener("click", () => {
   processTranscript().catch((error) => {
+    setIntakeLoading(false);
     promptOutput.textContent = `Error: ${error.message}`;
+    assistantReply.textContent = `Error: ${error.message}`;
   });
 });
 
-document.getElementById("evaluateClaim").addEventListener("click", () => {
+evaluateClaimButton.addEventListener("click", () => {
   evaluateClaim().catch((error) => {
-    resultOutput.textContent = `Error: ${error.message}`;
+    setCoverageLoading(false);
+    renderCoverageError(error.message);
   });
 });
 
-document.getElementById("resetSession").addEventListener("click", () => {
+resetSessionButton.addEventListener("click", () => {
   resetSession().catch((error) => {
+    setCoverageLoading(false);
     promptOutput.textContent = `Error: ${error.message}`;
   });
 });
@@ -397,4 +443,7 @@ document.querySelectorAll(".scenarioButton").forEach((button) => {
   });
 });
 
+stopVoiceButton.disabled = true;
+setIntakeLoading(false);
+setCoverageLoading(false);
 renderMap({}, []);

@@ -1,7 +1,7 @@
 from fastapi.testclient import TestClient
 
 from insurance_copilot.app import app
-from insurance_copilot.dependencies import database_service
+from insurance_copilot.dependencies import database_service, openai_service
 
 
 client = TestClient(app)
@@ -77,3 +77,35 @@ def test_notifications_feed_includes_sent_update() -> None:
     body = response.json()
     assert len(body["notifications"]) == 1
     assert body["notifications"][0]["customer_name"] == "Alice Johnson"
+
+
+def test_transcript_route_extracts_from_full_accumulated_conversation(monkeypatch) -> None:
+    seen_transcripts: list[str] = []
+    original_key = openai_service._api_key
+    openai_service._api_key = "test-key"
+
+    def fake_extract(transcript: str) -> dict:
+        seen_transcripts.append(transcript)
+        return {
+            "customer_name": "Brian Smith",
+            "policy_reference": "POL-1002",
+            "vehicle": None,
+            "location": "highway",
+            "issue_type": "engine_failure",
+            "is_drivable": False,
+            "safety_risk": None,
+            "passenger_count": None,
+        }
+
+    monkeypatch.setattr(openai_service, "extract_claim", fake_extract)
+    try:
+        client.post("/api/transcript", json={"session_id": "multi-turn", "chunk": "Hi, I'm Brian Smith."})
+        client.post(
+            "/api/transcript",
+            json={"session_id": "multi-turn", "chunk": "My policy ID is POL1002 and the vehicle is not drivable."},
+        )
+    finally:
+        openai_service._api_key = original_key
+
+    assert len(seen_transcripts) == 2
+    assert seen_transcripts[1] == "Hi, I'm Brian Smith. My policy ID is POL1002 and the vehicle is not drivable."

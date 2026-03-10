@@ -32,6 +32,21 @@ class TranscriptResponse(BaseModel):
     extracted_fields: dict[str, Any]
     missing_fields: list[str]
     next_prompt: str
+    assistant_source: str = "rules"
+
+
+class PolicyMatch(BaseModel):
+    policy_reference: str
+    customer_name: str
+    customer_id: str | None = None
+    phone: str | None = None
+    status: str
+    roadside_assistance: bool
+    tow_covered: bool
+    repair_van_covered: bool
+    rental_or_taxi_covered: bool
+    covered_regions: list[str] = Field(default_factory=list)
+    exclusions: list[str] = Field(default_factory=list)
 
 
 class CoverageDecision(BaseModel):
@@ -42,16 +57,39 @@ class CoverageDecision(BaseModel):
     confidence: float = 0.0
 
 
+class ProviderCandidate(BaseModel):
+    provider_name: str
+    garage_name: str
+    lat: float
+    lon: float
+    capabilities: list[str] = Field(default_factory=list)
+    eta_minutes: int
+    distance_score: float
+    selected: bool = False
+
+
 class DispatchPlan(BaseModel):
     action_type: ActionType
     provider_name: str
     garage_name: str
     eta_minutes: int
     ancillary_benefits: list[str] = Field(default_factory=list)
+    provider_lat: float | None = None
+    provider_lon: float | None = None
 
 
 class CustomerNotification(BaseModel):
     channel: Literal["sms"] = "sms"
+    message: str
+    timestamp: datetime
+
+
+class NotificationRecord(BaseModel):
+    id: int
+    session_id: str
+    customer_name: str | None = None
+    phone: str | None = None
+    coverage_status: CoverageStatus | str
     message: str
     timestamp: datetime
 
@@ -72,9 +110,29 @@ class EvaluateClaimRequest(BaseModel):
 
 class EvaluateClaimResponse(BaseModel):
     claim: ClaimIntake
+    matched_policy: PolicyMatch | None = None
     coverage_decision: CoverageDecision
+    provider_candidates: list[ProviderCandidate] = Field(default_factory=list)
     dispatch_plan: DispatchPlan
     customer_notification: CustomerNotification
     observer_state: ObserverState
     follow_up_questions: list[str]
+    coverage_query: str | None = None
+    dispatch_query: str | None = None
+    decision_source: str = "rules"
 
+
+class NotificationFeedResponse(BaseModel):
+    notifications: list[NotificationRecord] = Field(default_factory=list)
+
+
+class VoiceTurnResponse(BaseModel):
+    session_id: str
+    transcript: str
+    extracted_fields: dict[str, Any]
+    missing_fields: list[str]
+    next_prompt: str
+    assistant_text: str
+    assistant_audio_base64: str | None = None
+    assistant_audio_mime_type: str | None = None
+    assistant_source: str = "rules"

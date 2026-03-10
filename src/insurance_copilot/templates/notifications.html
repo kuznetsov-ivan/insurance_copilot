@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Insurance Co-Pilot Notifications</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body class="notifications-body">
+    <main class="notifications-shell">
+      <section class="hero compact">
+        <div>
+          <p class="eyebrow">Separate Notifications Webapp</p>
+          <h1>Customer Update Feed</h1>
+          <p class="lede">A standalone view of every notification sent by the claims workflow.</p>
+        </div>
+        <a class="secondary-link" href="/">Return to Main Demo</a>
+      </section>
+      <section class="panel">
+        <div class="stage-header">
+          <span class="stage-index">SMS</span>
+          <div>
+            <h2>Outbound Notifications</h2>
+            <p>Auto-refreshing feed of sent client updates.</p>
+          </div>
+        </div>
+        <div id="notificationFeed" class="notification-feed"></div>
+      </section>
+    </main>
+    <script src="/static/notifications.js"></script>
+  </body>
+</html>

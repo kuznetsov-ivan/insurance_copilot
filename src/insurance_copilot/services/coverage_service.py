@@ -1,15 +1,15 @@
 from __future__ import annotations
 
 from insurance_copilot.models import ClaimIntake, CoverageDecision
-from insurance_copilot.services.demo_data_service import DemoDataService
+from insurance_copilot.services.database_service import DatabaseService
 
 
 class CoverageService:
-    def __init__(self, data_service: DemoDataService) -> None:
-        self.data_service = data_service
+    def __init__(self, database_service: DatabaseService) -> None:
+        self.database_service = database_service
 
-    def evaluate(self, claim: ClaimIntake) -> tuple[CoverageDecision, dict]:
-        policy = self._find_policy(claim)
+    def evaluate(self, claim: ClaimIntake, matched_policy: dict | None = None) -> tuple[CoverageDecision, dict]:
+        policy = matched_policy or self._find_policy(claim)
         if policy is None:
             return (
                 CoverageDecision(
@@ -80,14 +80,4 @@ class CoverageService:
         )
 
     def _find_policy(self, claim: ClaimIntake) -> dict | None:
-        policies = self.data_service.policies()
-        if claim.policy_reference:
-            for policy in policies:
-                if policy["policy_reference"] == claim.policy_reference:
-                    return policy
-        if claim.customer_name:
-            for policy in policies:
-                if policy["customer_name"].lower() == claim.customer_name.lower():
-                    return policy
-        return None
-
+        return self.database_service.find_policy(claim.policy_reference, claim.customer_name)

@@ -7,66 +7,154 @@
     <link rel="stylesheet" href="/static/styles.css" />
   </head>
   <body>
-    <main class="container">
-      <section class="header">
-        <h1>Insurance Co-Pilot</h1>
-        <p>Roadside assistance intake with coverage, dispatch, and customer update.</p>
-      </section>
-
-      <section class="panel">
-        <h2>Claim Intake</h2>
-        <div class="controls">
-          <button id="startMic">Start Voice Capture</button>
-          <button id="stopMic">Stop</button>
-          <button id="processTranscript">Process Transcript</button>
-          <button id="evaluateClaim">Evaluate Claim</button>
-          <button id="resetSession">Reset</button>
+    <main class="shell">
+      <section class="hero">
+        <div>
+          <p class="eyebrow">Claims Demo Workflow</p>
+          <h1>Insurance Co-Pilot</h1>
+          <p class="lede">
+            A staged demo for voice intake, automated policy lookup, dispatch planning, and customer updates.
+          </p>
         </div>
-        <label for="manualInput">Manual transcript input (fallback)</label>
-        <textarea id="manualInput" rows="5" placeholder="Type customer conversation here..."></textarea>
-        <label for="transcript">Live transcript</label>
-        <textarea id="transcript" rows="7"></textarea>
-        <p id="micStatus" class="muted">Voice capture idle.</p>
+        <a class="secondary-link" href="/notifications" target="_blank" rel="noreferrer">
+          Open Notifications App
+        </a>
       </section>
 
-      <section class="grid">
-        <article class="panel">
-          <h3>Extracted Fields</h3>
-          <pre id="fieldsOutput">No data yet.</pre>
-          <h3>Missing Fields</h3>
-          <pre id="missingOutput">[]</pre>
-          <h3>Next Prompt</h3>
-          <pre id="promptOutput">Start voice capture to begin.</pre>
-        </article>
-
-        <article class="panel">
-          <h3>Observer Console</h3>
-          <pre id="observerOutput">No evaluation yet.</pre>
-        </article>
-      </section>
-
-      <section class="grid">
-        <article class="panel">
-          <h3>Coverage & Dispatch</h3>
-          <pre id="resultOutput">No evaluation yet.</pre>
-        </article>
-        <article class="panel">
-          <h3>Customer SMS Update</h3>
-          <pre id="smsOutput">No messages yet.</pre>
-        </article>
-      </section>
-
-      <section class="panel">
-        <h3>Demo Scenarios</h3>
-        <ul>
-          {% for scenario in scenarios %}
-          <li>
-            <button class="scenarioButton" data-transcript="{{ scenario.transcript | e }}">
+      <section class="stage-grid">
+        <article class="panel panel-intake">
+          <div class="stage-header">
+            <span class="stage-index">01</span>
+            <div>
+              <h2>Voice Agent Data Gathering</h2>
+              <p>Capture the conversation, extract structured details, and identify what is still missing.</p>
+            </div>
+          </div>
+          <div class="controls">
+            <button id="recordVoice">Record Voice Turn</button>
+            <button id="stopVoice" class="ghost">Stop & Send</button>
+            <button id="startMic" class="secondary-action">Browser Transcript</button>
+            <button id="stopMic" class="ghost">Stop Browser Mic</button>
+            <button id="processTranscript">Process Conversation</button>
+            <button id="resetSession" class="ghost">Reset</button>
+          </div>
+          <div class="scenario-strip">
+            {% for scenario in scenarios %}
+            <button class="scenarioButton scenario-chip" data-transcript="{{ scenario.transcript | e }}">
               {{ scenario.name }}
             </button>
-          </li>
-          {% endfor %}
-        </ul>
+            {% endfor %}
+          </div>
+          <div class="two-column">
+            <div>
+              <label for="manualInput">Voice transcript input / manual fallback</label>
+              <textarea
+                id="manualInput"
+                rows="6"
+                placeholder="Type or dictate the customer conversation here..."
+              ></textarea>
+            </div>
+            <div>
+              <label for="transcript">Accumulated conversation</label>
+              <textarea id="transcript" rows="6" placeholder="Transcript will build here..."></textarea>
+            </div>
+          </div>
+          <div class="status-bar">
+            <span id="micStatus">Voice capture idle.</span>
+            <span id="sessionTag">Session: default</span>
+          </div>
+          <div class="assistant-bar">
+            <div id="assistantReply" class="assistant-reply">The voice agent will reply here after each recorded turn.</div>
+            <audio id="assistantVoicePlayer" controls preload="none"></audio>
+          </div>
+          <div class="three-column">
+            <section class="subpanel">
+              <h3>Extracted Fields</h3>
+              <pre id="fieldsOutput">No data yet.</pre>
+            </section>
+            <section class="subpanel">
+              <h3>Missing Fields</h3>
+              <pre id="missingOutput">[]</pre>
+            </section>
+            <section class="subpanel accent">
+              <h3>Next Prompt</h3>
+              <pre id="promptOutput">Start voice capture to begin.</pre>
+            </section>
+          </div>
+        </article>
+
+        <article class="panel">
+          <div class="stage-header">
+            <span class="stage-index">02</span>
+            <div>
+              <h2>Automated Coverage Check</h2>
+              <p>Match the claim against the synthetic policy database and explain the coverage decision.</p>
+            </div>
+          </div>
+          <div class="controls">
+            <button id="evaluateClaim">Run Coverage Check</button>
+          </div>
+          <div class="two-column">
+            <section class="subpanel">
+              <h3>Matched Policy Record</h3>
+              <div id="policyCard" class="detail-card empty">No policy matched yet.</div>
+            </section>
+            <section class="subpanel">
+              <h3>Coverage Decision</h3>
+              <div id="coverageCard" class="detail-card empty">No assessment yet.</div>
+            </section>
+          </div>
+        </article>
+
+        <article class="panel panel-map">
+          <div class="stage-header">
+            <span class="stage-index">03</span>
+            <div>
+              <h2>Next Best Action</h2>
+              <p>Select the closest capable garage and decide whether to send a tow truck or repair van.</p>
+            </div>
+          </div>
+          <div class="two-column map-layout">
+            <section class="subpanel">
+              <h3>Dispatch Summary</h3>
+              <div id="resultOutput" class="detail-card empty">No dispatch recommendation yet.</div>
+              <h3>Observer Console</h3>
+              <pre id="observerOutput">No evaluation yet.</pre>
+            </section>
+            <section class="subpanel">
+              <h3>Provider Map</h3>
+              <div id="mapCanvas" class="map-canvas">
+                <div class="map-empty">Run the assessment to place the client and nearby providers.</div>
+              </div>
+              <div id="providerList" class="provider-list"></div>
+            </section>
+          </div>
+        </article>
+
+        <article class="panel panel-notify">
+          <div class="stage-header">
+            <span class="stage-index">04</span>
+            <div>
+              <h2>Client Updates</h2>
+              <p>Send the customer update and monitor the outbound feed in a separate notifications app.</p>
+            </div>
+          </div>
+          <div class="two-column">
+            <section class="subpanel accent">
+              <h3>Outbound Message</h3>
+              <pre id="smsOutput">No messages yet.</pre>
+            </section>
+            <section class="subpanel">
+              <h3>Notifications App</h3>
+              <div class="detail-card">
+                <p>Open the separate notifications webapp to show every sent update.</p>
+                <a class="primary-link" href="/notifications" target="_blank" rel="noreferrer">
+                  Launch Notifications Feed
+                </a>
+              </div>
+            </section>
+          </div>
+        </article>
       </section>
     </main>
     <script src="/static/app.js"></script>

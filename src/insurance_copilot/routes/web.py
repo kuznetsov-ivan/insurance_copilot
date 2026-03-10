@@ -18,3 +18,11 @@ def home(request: Request) -> HTMLResponse:
         context={"scenarios": data_service.scenarios()},
     )
 
+
+@router.get("/notifications", response_class=HTMLResponse)
+def notifications_app(request: Request) -> HTMLResponse:
+    return templates.TemplateResponse(
+        request=request,
+        name="notifications.html",
+        context={},
+    )
